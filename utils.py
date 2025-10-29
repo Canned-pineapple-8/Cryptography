@@ -75,6 +75,7 @@ def encrypt_file_mode():
     cypher.encrypt_file(infile, outfile, key)
     print("Файл зашифрован.")
 
+
 def binary_to_hex(bin_str:str) -> str:
     """
     Конвертация строки в бинарном формате в строку в 16-чной СС

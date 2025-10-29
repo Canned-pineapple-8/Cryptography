@@ -1,7 +1,8 @@
 import cypher
-import utils
+import utils, random_generator
 
 if __name__ == "__main__":
+    """
     print("1 - Примеры\n2 - Шифрование/дешифрование строки\n3 - Шифрование файла")
     choice = input("Выберите опцию: ").strip()
     try:
@@ -15,4 +16,15 @@ if __name__ == "__main__":
             print("Неверный выбор.")
     except RuntimeError as e:
         print(f"Ошибка: {e}")
+    """
+
+    pngen_const = {"A": 13,
+                   "B": 256,
+                   "C": 43,
+                   "T": 37
+                   }
+
+    c0 = random_generator.gen_c0(pngen_const)
+    print(c0)
+    print(len(c0))
 
