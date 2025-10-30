@@ -2,20 +2,22 @@ import os
 import cypher
 
 
-def show_examples():
+def show_examples(c0: list[int]):
     """
     Вспомогательная функция для вывода примеров
+    :param: c0 - начальный вектор C0
     :return: None
     """
     # Пример 1
     print("\n\tПример 1. Шифрование и дешифрование")
     pt = [int(x) for x in hex_to_binary("0123456789abcdef")]
     key = [int(x) for x in hex_to_binary("133457799BBCDFF1")]
+
     hex_pt = binary_to_hex(''.join(map(str, pt)))
     hex_key = binary_to_hex(''.join(map(str, key)))
-    ct = cypher.cypher_block(pt, key)
+    ct = cypher.cypher_block(pt, key, c0)
     hex_ct = binary_to_hex(''.join(map(str, ct)))
-    dec = cypher.decypher_block(ct, key)
+    dec = cypher.decypher_block(ct, key, c0)
     hex_dec = binary_to_hex(''.join(map(str, dec)))
     print("Исходный текст:", hex_pt)
     print("Ключ:", hex_key)
@@ -29,7 +31,7 @@ def show_examples():
     ct_err = ct.copy()
     ct_err[0] ^= 1
     hex_ct_err = binary_to_hex(''.join(map(str, ct_err)))
-    dec_err = cypher.decypher_block(ct_err, key)
+    dec_err = cypher.decypher_block(ct_err, key, c0)
     hex_dec_err = binary_to_hex(''.join(map(str, dec_err)))
     print("Шифрограмма с изменённым битом:", hex_ct_err)
     print("Расшифровка искажённой шифрограммы:", hex_dec_err)
@@ -39,32 +41,34 @@ def show_examples():
     weak_keys = ["0101010101010101", "fefefefefefefefe", "1f1f1f1f0e0e0e0e", "e0e0e0e0f1f1f1f1"]
     for wk in weak_keys:
         key = [int(x) for x in hex_to_binary(wk)]
-        ct1 = cypher.cypher_block(pt, key)
-        ct2 = cypher.cypher_block(ct1, key)
+        ct1 = cypher.cypher_block(pt, key, c0)
+        ct2 = cypher.cypher_block(ct1, key, c0)
         print(f"\nКлюч {wk}")
         print("Исходный текст:", hex_pt)
         print("После 1 шифрования:", binary_to_hex(''.join(map(str, ct1))))
         print("После 2 шифрований:", binary_to_hex(''.join(map(str, ct2))))
 
 
-def encrypt_decrypt_string():
+def encrypt_decrypt_string(c0: list[int]):
     """
     Вспомогательная функция для шифрования/дешифрации строки в 16-чном формате
     :return: None
     """
     text = input("Введите строку (hex): ").strip()
     key_hex = input("Введите ключ (hex, 16 символов): ").strip()
+
     if len(key_hex) != 16 or len(text) % 16 !=0 :
         raise RuntimeError("Длина ключа должна быть равна 16, а длина строки - кратна 16.")
     pt = [int(x) for x in hex_to_binary(text)]
     key = [int(x) for x in hex_to_binary(key_hex)]
-    ct = cypher.cypher_block(pt, key)
+    ct = cypher.cypher_block(pt, key, c0)
     print("Шифр:", binary_to_hex(''.join(map(str, ct))))
-    dec = cypher.decypher_block(ct, key)
+    dec = cypher.decypher_block(ct, key, c0)
     print("Расшифровка:", binary_to_hex(''.join(map(str, dec))))
 
 
-def encrypt_file_mode():
+
+def encrypt_file_mode(c0: str):
     """
     Вспомогательная функция для шифрования содержимого файла/записи результата в файл.
     :return: None
@@ -72,7 +76,7 @@ def encrypt_file_mode():
     infile = input("Имя входного файла: ").strip()
     outfile = input("Имя файла для шифра: ").strip()
     key = input("Ключ (hex): ").strip()
-    cypher.encrypt_file(infile, outfile, key)
+    cypher.encrypt_file(infile, outfile, key, c0)
     print("Файл зашифрован.")
 
 
