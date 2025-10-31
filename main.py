@@ -20,7 +20,7 @@ if __name__ == "__main__":
     choice = input("Выберите опцию: ").strip()
     try:
         if choice == "1":
-            utils.show_examples(c0)
+            utils.show_examples(hex_c0)
         elif choice == "2":
             utils.encrypt_decrypt_string(c0)
         elif choice == "3":

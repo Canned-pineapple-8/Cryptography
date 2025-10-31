@@ -1,8 +1,9 @@
 import os
 import cypher
+import utils
 
 
-def show_examples(c0: list[int]):
+def show_examples(c0: str):
     """
     Вспомогательная функция для вывода примеров
     :param: c0 - начальный вектор C0
@@ -10,46 +11,42 @@ def show_examples(c0: list[int]):
     """
     # Пример 1
     print("\n\tПример 1. Шифрование и дешифрование")
-    pt = [int(x) for x in hex_to_binary("0123456789abcdef")]
-    key = [int(x) for x in hex_to_binary("133457799BBCDFF1")]
+    pt = "0123456789abcdef0123456789abcdef0123456789abcdef"
+    key = "133457799BBCDFF1"
 
-    hex_pt = binary_to_hex(''.join(map(str, pt)))
-    hex_key = binary_to_hex(''.join(map(str, key)))
-    ct = cypher.cypher_block(pt, key, c0)
-    hex_ct = binary_to_hex(''.join(map(str, ct)))
-    dec = cypher.decypher_block(ct, key, c0)
-    hex_dec = binary_to_hex(''.join(map(str, dec)))
-    print("Исходный текст:", hex_pt)
-    print("Ключ:", hex_key)
-    print("Шифр:", hex_ct)
-    print("Расшифровка:", hex_dec)
+    ct = cypher.encrypt_text(pt, key, c0)
+    dt = cypher.decrypt_text(ct, key, c0)
+
+    print("Исходный текст:", pt)
+    print("Ключ:", key)
+    print("Вектор C:", c0)
+    print("Шифр:", ct)
+    print("Расшифровка:", dt)
 
     # Пример 2
     print("\n\tПример 2. Ошибка 1 бита")
-    print("Исходный текст:", hex_pt)
-    print("Шифрограмма:", hex_ct)
-    ct_err = ct.copy()
+    print("Исходный текст:", pt)
+    print("Шифрограмма:", ct)
+    ct_err = [int(x) for x in utils.hex_to_binary(ct)]
     ct_err[0] ^= 1
-    hex_ct_err = binary_to_hex(''.join(map(str, ct_err)))
-    dec_err = cypher.decypher_block(ct_err, key, c0)
-    hex_dec_err = binary_to_hex(''.join(map(str, dec_err)))
-    print("Шифрограмма с изменённым битом:", hex_ct_err)
-    print("Расшифровка искажённой шифрограммы:", hex_dec_err)
+    ct_err_hex = utils.binary_to_hex(''.join([str(x) for x in ct_err]))
+    dt_err_hex = cypher.decrypt_text(ct_err_hex, key, c0)
+    print("Шифрограмма с изменённым битом:", ct_err_hex)
+    print("Расшифровка искажённой шифрограммы:", dt_err_hex)
 
     # Пример 3
     print("\n\tПример 3. Слабые ключи")
     weak_keys = ["0101010101010101", "fefefefefefefefe", "1f1f1f1f0e0e0e0e", "e0e0e0e0f1f1f1f1"]
     for wk in weak_keys:
-        key = [int(x) for x in hex_to_binary(wk)]
-        ct1 = cypher.cypher_block(pt, key, c0)
-        ct2 = cypher.cypher_block(ct1, key, c0)
+        ct1 = cypher.encrypt_text(pt, wk, c0)
+        ct2 = cypher.encrypt_text(ct1, wk, c0)
         print(f"\nКлюч {wk}")
-        print("Исходный текст:", hex_pt)
-        print("После 1 шифрования:", binary_to_hex(''.join(map(str, ct1))))
-        print("После 2 шифрований:", binary_to_hex(''.join(map(str, ct2))))
+        print("Исходный текст:", pt)
+        print("После 1 шифрования:", ct1)
+        print("После 2 шифрований:", ct2)
 
 
-def encrypt_decrypt_string(c0: list[int]):
+def encrypt_decrypt_string(c0: str):
     """
     Вспомогательная функция для шифрования/дешифрации строки в 16-чном формате
     :return: None
@@ -57,15 +54,15 @@ def encrypt_decrypt_string(c0: list[int]):
     text = input("Введите строку (hex): ").strip()
     key_hex = input("Введите ключ (hex, 16 символов): ").strip()
 
-    if len(key_hex) != 16 or len(text) % 16 !=0 :
-        raise RuntimeError("Длина ключа должна быть равна 16, а длина строки - кратна 16.")
-    pt = [int(x) for x in hex_to_binary(text)]
-    key = [int(x) for x in hex_to_binary(key_hex)]
-    ct = cypher.cypher_block(pt, key, c0)
-    print("Шифр:", binary_to_hex(''.join(map(str, ct))))
-    dec = cypher.decypher_block(ct, key, c0)
-    print("Расшифровка:", binary_to_hex(''.join(map(str, dec))))
+    if len(key_hex) != 16 or len(c0) != 16 or len(text) % 16 != 0:
+        raise RuntimeError("Длина ключа и вектора C должна быть равна 16, а длина строки - кратна 16.")
 
+    crypted_text = cypher.encrypt_text(text, key_hex, c0)
+
+    print("Шифр:", crypted_text)
+    decrypted_text = cypher.decrypt_text(crypted_text, key_hex, c0)
+
+    print("Расшифровка:", decrypted_text)
 
 
 def encrypt_file_mode(c0: str):

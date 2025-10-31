@@ -24,22 +24,15 @@ def final_permutation(block: list[int], ip_inv: tuple[int] = constants.IP_INV) -
     return [block[ip_inv[i]] for i in range(len(ip_inv))]
 
 
-def des_round(block: list[int], key: list[int], c: list[int] = None) -> list[int]:
+def des_round(block: list[int], key: list[int]) -> list[int]:
     """
     Проведение одного из 16 этапов преобразования DES
-    :param c: вектор C
     :param block: блок длиной 64 бита (представлен списком чисел int длиной 64)
     :param key: ключ длиной 48 бит (представлен списком чисел int длиной 48)
     :return: блок, подвергнутый очередному раунду преобразования DES
     """
     assert_len("Блок", block, 64)
     assert_len("Ключ", key, 48)
-    if c is not None:
-        assert_len("Вектор C", c, 64)
-
-    if c is not None:
-        gammed_block = [el ^ k for el, k in zip(c, block)]
-        block = [x for x in gammed_block]
 
     l = block[:32]
     r = block[32:]
@@ -181,7 +174,23 @@ def gen_keys(k: list[int], pc2: tuple[int] = constants.PC2, ls: tuple[int] = con
     return tuple(keys)
 
 
-def cypher_block(block: list[int], key:list[int], c0: list[int]) -> list[int]:
+def cypher_block_cbc(block: list[int], key:list[int], c0: list[int]) -> list[int]:
+    """
+    Шифрование в режиме CBC
+    :param block: блок для шифрования в формате массива целых чисел (0/1)
+    :param key: ключ в формате массива целых чисел (0/1)
+    :param c0: вектор C в формате массива целых чисел (0/1)
+    :return: зашифрованный блок в формате массива целых чисел (0/1)
+    """
+    assert_len("Вектор C", c0, 64)
+    block = [b ^ c0_val for b, c0_val in zip(block, c0)]
+
+    encrypted_block = cypher_block(block, key)
+
+    return encrypted_block
+
+
+def cypher_block(block: list[int], key:list[int]) -> list[int]:
     """
     Зашифровать один блок
     :param c0: 64-битный вектор C
@@ -191,14 +200,12 @@ def cypher_block(block: list[int], key:list[int], c0: list[int]) -> list[int]:
     """
     assert_len("Блок", block, 64)
     assert_len("Ключ", key, 64)
-    assert_len("Вектор C", c0, 64)
 
     keys = gen_keys(key)
 
     p1_block = initial_permutation(block)
     for round_i in range(16):
-        p1_block = des_round(p1_block, keys[round_i], c0)
-        c0 = [x for x in p1_block]
+        p1_block = des_round(p1_block, keys[round_i])
 
     p2_block = p1_block[32:] + p1_block[:32]
 
@@ -207,10 +214,24 @@ def cypher_block(block: list[int], key:list[int], c0: list[int]) -> list[int]:
     return p2_block
 
 
-def decypher_block(block: list[int], key:list[int], c:list[int]) -> list[int]:
+def decypher_block_cbc(block: list[int], key:list[int], c0: list[int]) -> list[int]:
+    """
+    Дешифрование в режиме CBC
+    :param block: блок для дешифрования в формате массива целых чисел (0/1)
+    :param key: ключ в формате массива целых чисел (0/1)
+    :param c0: вектор С в формате массива целых чисел (0/1)
+    :return: расшифрованный блок в формате массива целых чисел (0/1)
+    """
+    assert_len("Вектор C", c0, 64)
+    decrypted_block = decypher_block(block, key)
+    result = [b ^ c0_val for b, c0_val in zip(decrypted_block, c0)]
+
+    return result
+
+
+def decypher_block(block: list[int], key:list[int]) -> list[int]:
     """
     Расшифровать один блок
-    :param c: вектор C
     :param block: 64-битный блок шифрограммы
     :param key: 64-битный исходный ключ
     :return: расшифрованный 64-битный текст
@@ -218,15 +239,13 @@ def decypher_block(block: list[int], key:list[int], c:list[int]) -> list[int]:
 
     assert_len("Блок", block, 64)
     assert_len("Ключ", key, 64)
-    assert_len("Вектор C", c, 64)
 
     keys = gen_keys(key)
 
     p1_block = initial_permutation(block)
     # применяем ту же функцию des_round, но ключи в обратном порядке
     for round_i in range(15, -1, -1):
-        p1_block = [el ^ k for el, k in zip(c, des_round(p1_block, keys[round_i]))]
-        c = [x for x in p1_block]
+        p1_block = des_round(p1_block, keys[round_i])
 
     p2_block = p1_block[32:] + p1_block[:32]
     p2_block = final_permutation(p2_block)
@@ -234,21 +253,63 @@ def decypher_block(block: list[int], key:list[int], c:list[int]) -> list[int]:
     return p2_block
 
 
+def encrypt_text(text: str, key_str: str, c0_str: str) -> str:
+    """
+    Шифрование текста в формате 16-чной строки в режиме CBC
+    :param text: текст для шифрования в формате 16-чной строки
+    :param key_str: ключ в формате 16-чной строки
+    :param c0_str: вектор C в формате 16-чной строки
+    :return: зашифрованный текст в формате 16-чной строки
+    """
+    key = [int(x) for x in hex_to_binary(key_str)]
+    c0 = [int(x) for x in hex_to_binary(c0_str)]
+
+    assert_len("Ключ", key, 64)
+    assert_len("Вектор C0", c0, 64)
+
+    text_blocks = hex_to_blocks(text)
+    result_hex = ""
+    for block in text_blocks:
+        crypted_block = cypher_block_cbc(block, key, c0)
+        c0 = [x for x in crypted_block]
+        result_hex += binary_to_hex(''.join([str(x) for x in crypted_block]))
+
+    return result_hex
+
+
+def decrypt_text(text: str, key_str: str, c0_str: str) -> str:
+    """
+    Дешифрование текста в формате 16-чной строки в режиме CBC
+    :param text: текст для дешифрования в формате 16-чной строки
+    :param key_str: ключ для дешифрования в формате 16-чной строки
+    :param c0_str: вектор C в формате 16-чной строки
+    :return: расшифрованный текст в формате 16-чной строки
+    """
+    key = [int(x) for x in hex_to_binary(key_str)]
+    c0 = [int(x) for x in hex_to_binary(c0_str)]
+
+    assert_len("Ключ", key, 64)
+    assert_len("Вектор C0", c0, 64)
+
+    text_blocks = hex_to_blocks(text)
+    result_hex = ""
+    for block in text_blocks:
+        decrypted_block = decypher_block_cbc(block, key, c0)
+        c0 = [x for x in decrypted_block]
+        result_hex += binary_to_hex(''.join([str(x) for x in decrypted_block]))
+
+    return result_hex
+
+
 def encrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
     """
     Осуществляет шифрование открытого текста, указанного в файле
-    :param c0: начальный вектор C0
+    :param c0: начальный вектор C0 в формате 16-чной строки
     :param in_filename: путь к файлу, текст которого требуется зашифровать
     :param out_filename: путь к файлу, в который требуется записать зашифрованный текст
     :param key: ключ в формате 16-чной строки
     :return: void
     """
-    key = [int(x) for x in hex_to_binary(key)]
-    c0 = [int(x) for x in hex_to_binary(c0)]
-
-    assert_len("Ключ", key, 64)
-    assert_len("Вектор C0", key, 64)
-
     # Чтение файла в бинарном режиме
     with open(in_filename, "rb") as f:
         plaintext_bytes = f.read()
@@ -256,13 +317,9 @@ def encrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
     # Преобразование байтов в hex-строку
     hex_text = plaintext_bytes.hex()
 
-    text_blocks = hex_to_blocks(hex_text)
-    result_hex = ""
-    for block in text_blocks:
-        crypted_block = cypher_block(block, key, c0)
-        result_hex += binary_to_hex(''.join([str(x) for x in crypted_block]))
+    crypted_text = encrypt_text(hex_text, key, c0)
 
     # Запись зашифрованных данных в бинарном режиме
-    result_bytes = bytes.fromhex(result_hex)
+    result_bytes = bytes.fromhex(crypted_text)
     with open(out_filename, "wb") as f:
         f.write(result_bytes)
