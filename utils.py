@@ -125,5 +125,31 @@ def hex_to_blocks(hex_str:str) -> list[list[int]]:
     return blocks
 
 
+def add_padding(text_hex: str, hex_block_size:int = 16) -> str:
+    """
+    Добавляет символы в строку так, чтобы её длина была кратна hex_block_size (в формате hex)
+    :param hex_block_size: размер блока (в 16-чном формате)
+    :param text_hex: строка для модификации
+    :return: модифицированная строка, длина которой кратна hex_block_size (в формате hex)
+    """
+    if len(text_hex) % hex_block_size == 0:
+        return text_hex
+
+    padding_length = hex_block_size - len(text_hex) % hex_block_size
+    padding_char = format(padding_length, '02x')[-1]
+    return text_hex + padding_char * padding_length
 
 
+def remove_padding(text_hex:str) -> str:
+    if len(text_hex) == 0:
+        return text_hex
+
+    padding_length = int(text_hex[-1], 16)
+    if padding_length <= 0 or padding_length > 16:
+        raise RuntimeError(f"Некорректное значение паддинга ({padding_length})")
+
+    padding_part = text_hex[-padding_length:]
+    if not all(c == text_hex[-1] for c in padding_part):
+        return text_hex
+
+    return text_hex[:-padding_length]

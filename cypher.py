@@ -1,4 +1,5 @@
 import constants
+import utils
 from utils import assert_len, hex_to_binary, hex_to_blocks, binary_to_hex
 
 
@@ -298,6 +299,8 @@ def decrypt_text(text: str, key_str: str, c0_str: str) -> str:
         c0 = [x for x in decrypted_block]
         result_hex += binary_to_hex(''.join([str(x) for x in decrypted_block]))
 
+    result_hex = utils.remove_padding(result_hex)
+
     return result_hex
 
 
@@ -310,16 +313,14 @@ def encrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
     :param key: ключ в формате 16-чной строки
     :return: void
     """
-    # Чтение файла в бинарном режиме
     with open(in_filename, "rb") as f:
         plaintext_bytes = f.read()
 
-    # Преобразование байтов в hex-строку
     hex_text = plaintext_bytes.hex()
+    hex_text = utils.add_padding(hex_text, 16)
 
     crypted_text = encrypt_text(hex_text, key, c0)
 
-    # Запись зашифрованных данных в бинарном режиме
     result_bytes = bytes.fromhex(crypted_text)
     with open(out_filename, "wb") as f:
         f.write(result_bytes)
