@@ -1,6 +1,5 @@
 import os
 import cypher
-import utils
 
 
 def show_examples(c0: str):
@@ -11,7 +10,7 @@ def show_examples(c0: str):
     """
     # Пример 1
     print("\n\tПример 1. Шифрование и дешифрование")
-    pt = "0123456789abcdef0123456789abcdef0123456789abcdef"
+    pt = "0123456789abcdef0123456789abcdef"
     key = "133457799BBCDFF1"
 
     ct = cypher.encrypt_text(pt, key, c0)
@@ -27,9 +26,9 @@ def show_examples(c0: str):
     print("\n\tПример 2. Ошибка 1 бита")
     print("Исходный текст:", pt)
     print("Шифрограмма:", ct)
-    ct_err = [int(x) for x in utils.hex_to_binary(ct)]
+    ct_err = [int(x) for x in hex_to_binary(ct)]
     ct_err[0] ^= 1
-    ct_err_hex = utils.binary_to_hex(''.join([str(x) for x in ct_err]))
+    ct_err_hex = binary_to_hex(''.join([str(x) for x in ct_err]))
     dt_err_hex = cypher.decrypt_text(ct_err_hex, key, c0)
     print("Шифрограмма с изменённым битом:", ct_err_hex)
     print("Расшифровка искажённой шифрограммы:", dt_err_hex)
@@ -46,22 +45,36 @@ def show_examples(c0: str):
         print("После 2 шифрований:", ct2)
 
 
-def encrypt_decrypt_string(c0: str):
+def encrypt_string(c0: str):
     """
-    Вспомогательная функция для шифрования/дешифрации строки в 16-чном формате
+    Вспомогательная функция для шифрования строки в 16-чном формате
     :return: None
     """
     text = input("Введите строку (hex): ").strip()
     key_hex = input("Введите ключ (hex, 16 символов): ").strip()
 
-    if len(key_hex) != 16 or len(c0) != 16 or len(text) % 16 != 0:
-        raise RuntimeError("Длина ключа и вектора C должна быть равна 16, а длина строки - кратна 16.")
+    if len(key_hex) != 16 or len(c0) != 16:
+        raise RuntimeError("Длина ключа и вектора C должна быть равна 16.")
 
+    print(f"Вектор С0: {c0}")
     crypted_text = cypher.encrypt_text(text, key_hex, c0)
 
     print("Шифр:", crypted_text)
-    decrypted_text = cypher.decrypt_text(crypted_text, key_hex, c0)
 
+
+def decrypt_string(c0: str):
+    """
+    Вспомогательная функция для дешифрования строки в 16-чном формате
+    :return: None
+    """
+    text = input("Введите строку (hex): ").strip()
+    key_hex = input("Введите ключ (hex, 16 символов): ").strip()
+
+    if len(key_hex) != 16 or len(c0) != 16:
+        raise RuntimeError("Длина ключа и вектора C должна быть равна 16.")
+
+    print(f"Вектор С0: {c0}")
+    decrypted_text = cypher.decrypt_text(text, key_hex, c0)
     print("Расшифровка:", decrypted_text)
 
 
@@ -70,11 +83,27 @@ def encrypt_file_mode(c0: str):
     Вспомогательная функция для шифрования содержимого файла/записи результата в файл.
     :return: None
     """
-    infile = input("Имя входного файла: ").strip()
-    outfile = input("Имя файла для шифра: ").strip()
+    infile = input("Имя входного файла с исходным текстом: ").strip()
+    outfile = input("Имя файла для помещения шифра: ").strip()
     key = input("Ключ (hex): ").strip()
-    cypher.encrypt_file(infile, outfile, key, c0)
-    print("Файл зашифрован.")
+    print(f"Вектор С0: {c0}")
+    result = cypher.encrypt_file(infile, outfile, key, c0)
+    if result == 0:
+        print("Файл зашифрован.")
+
+
+def decrypt_file_mode(c0: str):
+    """
+    Вспомогательная функция для дешифрования содержимого файла/записи результата в файл.
+    :return: None
+    """
+    infile = input("Имя входного файла с шифром: ").strip()
+    outfile = input("Имя файла для помещения расшифровки: ").strip()
+    key = input("Ключ (hex): ").strip()
+    print(f"Вектор С0: {c0}")
+    result = cypher.decrypt_file(infile, outfile, key, c0)
+    if result == 0:
+        print("Файл расшифрован.")
 
 
 def binary_to_hex(bin_str:str) -> str:

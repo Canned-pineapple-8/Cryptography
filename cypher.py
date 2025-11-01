@@ -1,6 +1,6 @@
 import constants
-import utils
-from utils import assert_len, hex_to_binary, hex_to_blocks, binary_to_hex
+import os
+from utils import *
 
 
 def initial_permutation(block: list[int], ip: tuple[int] = constants.IP) -> list[int]:
@@ -268,6 +268,7 @@ def encrypt_text(text: str, key_str: str, c0_str: str) -> str:
     assert_len("Ключ", key, 64)
     assert_len("Вектор C0", c0, 64)
 
+    text = utils.add_padding(text, 16)
     text_blocks = hex_to_blocks(text)
     result_hex = ""
     for block in text_blocks:
@@ -311,16 +312,46 @@ def encrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
     :param in_filename: путь к файлу, текст которого требуется зашифровать
     :param out_filename: путь к файлу, в который требуется записать зашифрованный текст
     :param key: ключ в формате 16-чной строки
-    :return: void
     """
+    if not os.path.exists(in_filename):
+        print(f"Файла {in_filename} не существует.")
+        return -1
+
     with open(in_filename, "rb") as f:
         plaintext_bytes = f.read()
 
     hex_text = plaintext_bytes.hex()
-    hex_text = utils.add_padding(hex_text, 16)
 
     crypted_text = encrypt_text(hex_text, key, c0)
 
     result_bytes = bytes.fromhex(crypted_text)
     with open(out_filename, "wb") as f:
         f.write(result_bytes)
+
+    return 0
+
+
+def decrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
+    """
+    Осуществляет расшифровку открытого текста, указанного в файле
+    :param c0: начальный вектор C0 в формате 16-чной строки
+    :param in_filename: путь к файлу, текст которого требуется зашифровать
+    :param out_filename: путь к файлу, в который требуется записать зашифрованный текст
+    :param key: ключ в формате 16-чной строки
+    """
+    if not os.path.exists(in_filename):
+        print(f"Файла {in_filename} не существует.")
+        return -1
+
+    with open(in_filename, "rb") as f:
+        plaintext_bytes = f.read()
+
+    hex_text = plaintext_bytes.hex()
+
+    decrypted_text = decrypt_text(hex_text, key, c0)
+
+    result_bytes = bytes.fromhex(decrypted_text)
+    with open(out_filename, "wb") as f:
+        f.write(result_bytes)
+
+    return 0
