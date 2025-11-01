@@ -268,7 +268,7 @@ def encrypt_text(text: str, key_str: str, c0_str: str) -> str:
     assert_len("Ключ", key, 64)
     assert_len("Вектор C0", c0, 64)
 
-    text = utils.add_padding(text, 16)
+    text = add_padding(text, 16)
     text_blocks = hex_to_blocks(text)
     result_hex = ""
     for block in text_blocks:
@@ -297,10 +297,10 @@ def decrypt_text(text: str, key_str: str, c0_str: str) -> str:
     result_hex = ""
     for block in text_blocks:
         decrypted_block = decypher_block_cbc(block, key, c0)
-        c0 = [x for x in decrypted_block]
+        c0 = [x for x in block]
         result_hex += binary_to_hex(''.join([str(x) for x in decrypted_block]))
 
-    result_hex = utils.remove_padding(result_hex)
+    result_hex = remove_padding(result_hex)
 
     return result_hex
 

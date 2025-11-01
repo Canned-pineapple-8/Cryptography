@@ -170,6 +170,11 @@ def add_padding(text_hex: str, hex_block_size:int = 16) -> str:
 
 
 def remove_padding(text_hex:str) -> str:
+    """
+    Убирает из строки символы, которые были добавлены методом add_padding
+    :param text_hex: строка для модификации
+    :return: модифицированная строка
+    """
     if len(text_hex) == 0:
         return text_hex
 

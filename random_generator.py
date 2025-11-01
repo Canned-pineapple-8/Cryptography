@@ -2,6 +2,7 @@ from typing import *
 from math import log2
 from constants import c0_length
 
+
 def pn_gen(seq: List[int], ind: int, constants: Dict[str,int]) -> int:
     """
     Генератор псевдослучайных чисел (ПСЧ)
@@ -28,9 +29,9 @@ def pn_gen(seq: List[int], ind: int, constants: Dict[str,int]) -> int:
 
 def gen_c0(constants: Dict[str, int]) -> List[int]:
     """
-
-    :param constants:
-    :return:
+    Функция генерации вектора C0 с использованием датчика ПСЧ
+    :param constants: константы для вектора ПСЧ
+    :return: сгенерированный вектор C0
     """
     b = constants["B"]
     if b < 1:
