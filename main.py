@@ -14,17 +14,21 @@ if __name__ == "__main__":
 
     print("1 - Примеры\n2 - Шифрование строки\n3 - Дешифрование строки\n4 - Шифрование файла\n5 - Дешифрование файла")
     choice = input("Выберите опцию: ").strip()
+    k = int(input("Введите размер блока k: "))
+    if k < 1 or k > 64 or k % 4 != 0:
+        print("Введено неверное значение блока k (условия корректного k: 1 <= k <= 64 и k кратно 4).")
+        exit()
     try:
         if choice == "1":
-            utils.show_examples(hex_c0, 8)
+            utils.show_examples(hex_c0, k)
         elif choice == "2":
-            utils.encrypt_string(hex_c0)
+            utils.encrypt_string(hex_c0, k)
         elif choice == "3":
-            utils.decrypt_string(hex_c0)
+            utils.decrypt_string(hex_c0, k)
         elif choice == "4":
-            utils.encrypt_file_mode(hex_c0)
+            utils.encrypt_file_mode(hex_c0, k)
         elif choice == "5":
-            utils.decrypt_file_mode(hex_c0)
+            utils.decrypt_file_mode(hex_c0, k)
         else:
             print("Неверный выбор.")
     except RuntimeError as e:

@@ -224,11 +224,12 @@ def decypher_block(block: list[int], key:list[int]) -> list[int]:
 
 def encrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> tuple[list[int], list[int]]:
     """
-
-    :param text:
-    :param key:
-    :param c0:
-    :return:
+    Зашифровать блок в формате CFB
+    :param k: размер блока (для проверки)
+    :param text: текст для шифрования (список длины k состоящий из 0/1)
+    :param key: ключ для шифрования (список длины 64 состоящий из 0/1)
+    :param c0: вектор C (список длины 64 состоящий из 0/1)
+    :return: кортеж из зашифрованного текста и следующего значения вектора C
     """
     assert_len("Ключ", key, 64)
     assert_len("Вектор С", c0, 64)
@@ -237,8 +238,28 @@ def encrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> 
     encrypted_key_c = cypher_block(c0, key)
 
     result = [t ^ kc for t, kc in zip(text, encrypted_key_c[:k])]
-    # next_c = c0[k:] + encrypted_key_c[:k]
     next_c = c0[k:] + result[:k]
+
+    return result, next_c
+
+
+def decrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> tuple[list[int], list[int]]:
+    """
+    Расшифровать блок в формате CFB
+    :param k: размер блока (для проверки)
+    :param text: текст для расшифровки (список длины k состоящий из 0/1)
+    :param key: ключ для расшифровки (список длины 64 состоящий из 0/1)
+    :param c0: вектор С (список длины 64 состоящий из 0/1)
+    :return: кортеж из расшифрованного текста и следующего значения вектора C
+    """
+    assert_len("Ключ", key, 64)
+    assert_len("Вектор С", c0, 64)
+    assert_len("Блок", text, k)
+
+    encrypted_key_c = cypher_block(c0, key)
+
+    result = [t ^ kc for t, kc in zip(text, encrypted_key_c[:k])]
+    next_c = c0[k:] + text[:k]
 
     return result, next_c
 
@@ -246,7 +267,7 @@ def encrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> 
 def encrypt_text(text: str, key_str: str, c0_str: str, k:int) -> str:
     """
     Шифрование текста в формате 16-чной строки в режиме CFB
-    :param k:
+    :param k: размер блока шифрования
     :param text: текст для шифрования в формате 16-чной строки
     :param key_str: ключ в формате 16-чной строки
     :param c0_str: вектор C в формате 16-чной строки
@@ -258,7 +279,7 @@ def encrypt_text(text: str, key_str: str, c0_str: str, k:int) -> str:
     assert_len("Ключ", key, 64)
     assert_len("Вектор C0", c0, 64)
 
-    text = add_padding(text, k)
+    text = add_padding(text, k // 4)
     text_blocks = hex_to_blocks(text, k)
     result = []
     next_c = c0
@@ -270,10 +291,11 @@ def encrypt_text(text: str, key_str: str, c0_str: str, k:int) -> str:
 
     return result_hex
 
-'''
-def decrypt_text(text: str, key_str: str, c0_str: str) -> str:
+
+def decrypt_text(text: str, key_str: str, c0_str: str, k: int) -> str:
     """
-    Дешифрование текста в формате 16-чной строки в режиме CBC
+    Дешифрование текста в формате 16-чной строки в режиме CFB
+    :param k: размер блока дешифрования
     :param text: текст для дешифрования в формате 16-чной строки
     :param key_str: ключ для дешифрования в формате 16-чной строки
     :param c0_str: вектор C в формате 16-чной строки
@@ -285,21 +307,23 @@ def decrypt_text(text: str, key_str: str, c0_str: str) -> str:
     assert_len("Ключ", key, 64)
     assert_len("Вектор C0", c0, 64)
 
-    text_blocks = hex_to_blocks(text)
-    result_hex = ""
+    text_blocks = hex_to_blocks(text, k)
+    result = []
     for block in text_blocks:
-        decrypted_block = decypher_block_cbc(block, key, c0)
-        c0 = [x for x in block]
-        result_hex += binary_to_hex(''.join([str(x) for x in decrypted_block]))
+        decrypted_block, c0 = decrypt_block_cfb(block, key, c0, k)
+        result.extend(decrypted_block)
+
+    result_hex = binary_to_hex(''.join([str(x) for x in result]))
 
     result_hex = remove_padding(result_hex)
 
     return result_hex
 
 
-def encrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
+def encrypt_file(in_filename: str, out_filename: str, key: str, c0: str, k: int):
     """
-    Осуществляет шифрование открытого текста, указанного в файле
+    Осуществляет шифрование открытого текста, указанного в файле.
+    :param k: размер блока шифрования
     :param c0: начальный вектор C0 в формате 16-чной строки
     :param in_filename: путь к файлу, текст которого требуется зашифровать
     :param out_filename: путь к файлу, в который требуется записать зашифрованный текст
@@ -314,7 +338,7 @@ def encrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
 
     hex_text = plaintext_bytes.hex()
 
-    crypted_text = encrypt_text(hex_text, key, c0)
+    crypted_text = encrypt_text(hex_text, key, c0, k)
 
     result_bytes = bytes.fromhex(crypted_text)
     with open(out_filename, "wb") as f:
@@ -323,9 +347,10 @@ def encrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
     return 0
 
 
-def decrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
+def decrypt_file(in_filename: str, out_filename: str, key: str, c0: str, k: int):
     """
     Осуществляет расшифровку открытого текста, указанного в файле
+    :param k: размер блока шифрования
     :param c0: начальный вектор C0 в формате 16-чной строки
     :param in_filename: путь к файлу, текст которого требуется зашифровать
     :param out_filename: путь к файлу, в который требуется записать зашифрованный текст
@@ -340,10 +365,10 @@ def decrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
 
     hex_text = plaintext_bytes.hex()
 
-    decrypted_text = decrypt_text(hex_text, key, c0)
+    decrypted_text = decrypt_text(hex_text, key, c0, k)
 
     result_bytes = bytes.fromhex(decrypted_text)
     with open(out_filename, "wb") as f:
         f.write(result_bytes)
 
-    return 0 '''
+    return 0

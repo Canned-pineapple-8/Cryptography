@@ -11,14 +11,12 @@ def show_examples(c0: str, k: int):
     """
     # Пример 1
     print("\n\tПример 1. Шифрование и дешифрование")
-    #pt = "0123456789abcdef0123456789abcdef"
-    pt = "0123456789abcdef"
+    pt = "0123456789abcdef0123456789abcdef"
     key = "133457799BBCDFF1"
-    for k in range(1,64):
-        ct = cypher.encrypt_text(pt, key, c0, k)
-        print(f"Размер блока {k}, шифр: {ct}, {len(ct)}")
-    dt = cypher.encrypt_text(ct, key, c0, k)
+    ct = cypher.encrypt_text(pt, key, c0, k)
+    dt = cypher.decrypt_text(ct, key, c0, k)
 
+    print("Размер блока: ", k)
     print("Исходный текст:", pt)
     print("Ключ:", key)
     print("Вектор C:", c0)
@@ -48,9 +46,11 @@ def show_examples(c0: str, k: int):
         print("После 2 шифрований:", ct2)
 
 
-def encrypt_string(c0: str):
+def encrypt_string(c0: str, k: int):
     """
     Вспомогательная функция для шифрования строки в 16-чном формате
+    :param: c0 - начальный вектор C0
+    :param: k - размер блока
     :return: None
     """
     text = input("Введите строку (hex): ").strip()
@@ -60,14 +60,16 @@ def encrypt_string(c0: str):
         raise RuntimeError("Длина ключа и вектора C должна быть равна 16.")
 
     print(f"Вектор С0: {c0}")
-    crypted_text = cypher.encrypt_text(text, key_hex, c0)
+    crypted_text = cypher.encrypt_text(text, key_hex, c0, k)
 
     print("Шифр:", crypted_text)
 
 
-def decrypt_string(c0: str):
+def decrypt_string(c0: str, k: int):
     """
     Вспомогательная функция для дешифрования строки в 16-чном формате
+    :param: c0 - начальный вектор C0
+    :param: k - размер блока
     :return: None
     """
     text = input("Введите строку (hex): ").strip()
@@ -77,34 +79,38 @@ def decrypt_string(c0: str):
         raise RuntimeError("Длина ключа и вектора C должна быть равна 16.")
 
     print(f"Вектор С0: {c0}")
-    decrypted_text = cypher.decrypt_text(text, key_hex, c0)
+    decrypted_text = cypher.decrypt_text(text, key_hex, c0, k)
     print("Расшифровка:", decrypted_text)
 
 
-def encrypt_file_mode(c0: str):
+def encrypt_file_mode(c0: str, k:int):
     """
     Вспомогательная функция для шифрования содержимого файла/записи результата в файл.
+    :param: c0 - начальный вектор C0
+    :param: k - размер блока
     :return: None
     """
     infile = input("Имя входного файла с исходным текстом: ").strip()
     outfile = input("Имя файла для помещения шифра: ").strip()
     key = input("Ключ (hex): ").strip()
     print(f"Вектор С0: {c0}")
-    result = cypher.encrypt_file(infile, outfile, key, c0)
+    result = cypher.encrypt_file(infile, outfile, key, c0, k)
     if result == 0:
         print("Файл зашифрован.")
 
 
-def decrypt_file_mode(c0: str):
+def decrypt_file_mode(c0: str, k: int):
     """
     Вспомогательная функция для дешифрования содержимого файла/записи результата в файл.
+    :param: c0 - начальный вектор C0
+    :param: k - размер блока
     :return: None
     """
     infile = input("Имя входного файла с шифром: ").strip()
     outfile = input("Имя файла для помещения расшифровки: ").strip()
     key = input("Ключ (hex): ").strip()
     print(f"Вектор С0: {c0}")
-    result = cypher.decrypt_file(infile, outfile, key, c0)
+    result = cypher.decrypt_file(infile, outfile, key, c0, k)
     if result == 0:
         print("Файл расшифрован.")
 
@@ -183,11 +189,11 @@ def remove_padding(text_hex:str) -> str:
         return text_hex
 
     padding_length = int(text_hex[-1], 16)
-    if padding_length <= 0 or padding_length > 16:
+    if padding_length < 0 or padding_length > 16:
         raise RuntimeError(f"Некорректное значение паддинга ({padding_length})")
 
     padding_part = text_hex[-padding_length:]
-    if not all(c == text_hex[-1] for c in padding_part):
+    if not all(c == text_hex[-1] for c in padding_part) or len(text_hex) <= padding_length:
         return text_hex
 
     return text_hex[:-padding_length]
