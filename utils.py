@@ -2,19 +2,22 @@ import os
 import cypher
 
 
-def show_examples(c0: str):
+def show_examples(c0: str, k: int):
     """
     Вспомогательная функция для вывода примеров
     :param: c0 - начальный вектор C0
+    :param: k - размер блока
     :return: None
     """
     # Пример 1
     print("\n\tПример 1. Шифрование и дешифрование")
-    pt = "0123456789abcdef0123456789abcdef"
+    #pt = "0123456789abcdef0123456789abcdef"
+    pt = "0123456789abcdef"
     key = "133457799BBCDFF1"
-
-    ct = cypher.encrypt_text(pt, key, c0)
-    dt = cypher.decrypt_text(ct, key, c0)
+    for k in range(1,64):
+        ct = cypher.encrypt_text(pt, key, c0, k)
+        print(f"Размер блока {k}, шифр: {ct}, {len(ct)}")
+    dt = cypher.encrypt_text(ct, key, c0, k)
 
     print("Исходный текст:", pt)
     print("Ключ:", key)
@@ -29,7 +32,7 @@ def show_examples(c0: str):
     ct_err = [int(x) for x in hex_to_binary(ct)]
     ct_err[0] ^= 1
     ct_err_hex = binary_to_hex(''.join([str(x) for x in ct_err]))
-    dt_err_hex = cypher.decrypt_text(ct_err_hex, key, c0)
+    dt_err_hex = cypher.encrypt_text(ct_err_hex, key, c0, k)
     print("Шифрограмма с изменённым битом:", ct_err_hex)
     print("Расшифровка искажённой шифрограммы:", dt_err_hex)
 
@@ -37,8 +40,8 @@ def show_examples(c0: str):
     print("\n\tПример 3. Слабые ключи")
     weak_keys = ["0101010101010101", "fefefefefefefefe", "1f1f1f1f0e0e0e0e", "e0e0e0e0f1f1f1f1"]
     for wk in weak_keys:
-        ct1 = cypher.encrypt_text(pt, wk, c0)
-        ct2 = cypher.encrypt_text(ct1, wk, c0)
+        ct1 = cypher.encrypt_text(pt, wk, c0, k)
+        ct2 = cypher.encrypt_text(ct1, wk, c0, k)
         print(f"\nКлюч {wk}")
         print("Исходный текст:", pt)
         print("После 1 шифрования:", ct1)
@@ -143,14 +146,15 @@ def assert_len(name: str, arr: list[int], expected: int):
         raise RuntimeError(f"{name} должен быть длины {expected}, но длина — {len(arr)}")
 
 
-def hex_to_blocks(hex_str:str) -> list[list[int]]:
+def hex_to_blocks(hex_str:str, block_size:int) -> list[list[int]]:
     """
-    Преобразовывает 16-чную строку в массив блоков по 64 бита в бинарном представлении
+    Преобразовывает 16-чную строку в массив блоков по block_size бита в бинарном представлении
+    :param block_size: размер выходных блоков в битах
     :param hex_str: строка в 16-чном формате
-    :return: массив из блоков по 64 элемента, каждый из которых представлен набором нулей и единиц
+    :return: массив из блоков по block_size элементов, каждый из которых представлен набором нулей и единиц
     """
-    str_blocks = [hex_str[i:i+16] for i in range(0, len(hex_str),16)]
-    blocks = [[int(x) for x in hex_to_binary(i)] for i in str_blocks]
+    bits = [int(x) for x in hex_to_binary(hex_str)]
+    blocks = [bits[i:i+block_size] for i in range(0, len(bits),block_size)]
     return blocks
 
 

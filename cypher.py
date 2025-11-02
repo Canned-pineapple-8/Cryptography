@@ -175,26 +175,9 @@ def gen_keys(k: list[int], pc2: tuple[int] = constants.PC2, ls: tuple[int] = con
     return tuple(keys)
 
 
-def cypher_block_cbc(block: list[int], key:list[int], c0: list[int]) -> list[int]:
-    """
-    Шифрование в режиме CBC
-    :param block: блок для шифрования в формате массива целых чисел (0/1)
-    :param key: ключ в формате массива целых чисел (0/1)
-    :param c0: вектор C в формате массива целых чисел (0/1)
-    :return: зашифрованный блок в формате массива целых чисел (0/1)
-    """
-    assert_len("Вектор C", c0, 64)
-    block = [b ^ c0_val for b, c0_val in zip(block, c0)]
-
-    encrypted_block = cypher_block(block, key)
-
-    return encrypted_block
-
-
 def cypher_block(block: list[int], key:list[int]) -> list[int]:
     """
-    Зашифровать один блок
-    :param c0: 64-битный вектор C
+    Зашифровать один блок в режиме ECB
     :param block: 64-битный блок открытого текста
     :param key: 64-битный исходный ключ
     :return: зашифрованный 64-битный текст
@@ -215,24 +198,9 @@ def cypher_block(block: list[int], key:list[int]) -> list[int]:
     return p2_block
 
 
-def decypher_block_cbc(block: list[int], key:list[int], c0: list[int]) -> list[int]:
-    """
-    Дешифрование в режиме CBC
-    :param block: блок для дешифрования в формате массива целых чисел (0/1)
-    :param key: ключ в формате массива целых чисел (0/1)
-    :param c0: вектор С в формате массива целых чисел (0/1)
-    :return: расшифрованный блок в формате массива целых чисел (0/1)
-    """
-    assert_len("Вектор C", c0, 64)
-    decrypted_block = decypher_block(block, key)
-    result = [b ^ c0_val for b, c0_val in zip(decrypted_block, c0)]
-
-    return result
-
-
 def decypher_block(block: list[int], key:list[int]) -> list[int]:
     """
-    Расшифровать один блок
+    Расшифровать один блок в режиме ECB
     :param block: 64-битный блок шифрограммы
     :param key: 64-битный исходный ключ
     :return: расшифрованный 64-битный текст
@@ -254,9 +222,31 @@ def decypher_block(block: list[int], key:list[int]) -> list[int]:
     return p2_block
 
 
-def encrypt_text(text: str, key_str: str, c0_str: str) -> str:
+def encrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> tuple[list[int], list[int]]:
     """
-    Шифрование текста в формате 16-чной строки в режиме CBC
+
+    :param text:
+    :param key:
+    :param c0:
+    :return:
+    """
+    assert_len("Ключ", key, 64)
+    assert_len("Вектор С", c0, 64)
+    assert_len("Блок", text, k)
+
+    encrypted_key_c = cypher_block(c0, key)
+
+    result = [t ^ kc for t, kc in zip(text, encrypted_key_c[:k])]
+    # next_c = c0[k:] + encrypted_key_c[:k]
+    next_c = c0[k:] + result[:k]
+
+    return result, next_c
+
+
+def encrypt_text(text: str, key_str: str, c0_str: str, k:int) -> str:
+    """
+    Шифрование текста в формате 16-чной строки в режиме CFB
+    :param k:
     :param text: текст для шифрования в формате 16-чной строки
     :param key_str: ключ в формате 16-чной строки
     :param c0_str: вектор C в формате 16-чной строки
@@ -268,17 +258,19 @@ def encrypt_text(text: str, key_str: str, c0_str: str) -> str:
     assert_len("Ключ", key, 64)
     assert_len("Вектор C0", c0, 64)
 
-    text = add_padding(text, 16)
-    text_blocks = hex_to_blocks(text)
-    result_hex = ""
+    text = add_padding(text, k)
+    text_blocks = hex_to_blocks(text, k)
+    result = []
+    next_c = c0
     for block in text_blocks:
-        crypted_block = cypher_block_cbc(block, key, c0)
-        c0 = [x for x in crypted_block]
-        result_hex += binary_to_hex(''.join([str(x) for x in crypted_block]))
+        crypted_block, next_c = encrypt_block_cfb(block, key, next_c, k)
+        result.extend(crypted_block)
+
+    result_hex = binary_to_hex(''.join([str(x) for x in result]))
 
     return result_hex
 
-
+'''
 def decrypt_text(text: str, key_str: str, c0_str: str) -> str:
     """
     Дешифрование текста в формате 16-чной строки в режиме CBC
@@ -354,4 +346,4 @@ def decrypt_file(in_filename: str, out_filename: str, key: str, c0: str):
     with open(out_filename, "wb") as f:
         f.write(result_bytes)
 
-    return 0
+    return 0 '''
