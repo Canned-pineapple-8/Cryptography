@@ -222,9 +222,9 @@ def decypher_block(block: list[int], key:list[int]) -> list[int]:
     return p2_block
 
 
-def encrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> tuple[list[int], list[int]]:
+def encrypt_block_ofb(text: list[int], key: list[int], c0: list[int], k:int) -> tuple[list[int], list[int]]:
     """
-    Зашифровать блок в формате CFB
+    Зашифровать блок в формате OFB
     :param k: размер блока (для проверки)
     :param text: текст для шифрования (список длины k состоящий из 0/1)
     :param key: ключ для шифрования (список длины 64 состоящий из 0/1)
@@ -238,14 +238,14 @@ def encrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> 
     encrypted_key_c = cypher_block(c0, key)
 
     result = [t ^ kc for t, kc in zip(text, encrypted_key_c[:k])]
-    next_c = c0[k:] + result[:k]
+    next_c = encrypted_key_c[:]
 
     return result, next_c
 
 
-def decrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> tuple[list[int], list[int]]:
+def decrypt_block_ofb(text: list[int], key: list[int], c0: list[int], k:int) -> tuple[list[int], list[int]]:
     """
-    Расшифровать блок в формате CFB
+    Расшифровать блок в формате OFB
     :param k: размер блока (для проверки)
     :param text: текст для расшифровки (список длины k состоящий из 0/1)
     :param key: ключ для расшифровки (список длины 64 состоящий из 0/1)
@@ -259,14 +259,14 @@ def decrypt_block_cfb(text: list[int], key: list[int], c0: list[int], k:int) -> 
     encrypted_key_c = cypher_block(c0, key)
 
     result = [t ^ kc for t, kc in zip(text, encrypted_key_c[:k])]
-    next_c = c0[k:] + text[:k]
+    next_c = encrypted_key_c[:]
 
     return result, next_c
 
 
 def encrypt_text(text: str, key_str: str, c0_str: str, k:int) -> str:
     """
-    Шифрование текста в формате 16-чной строки в режиме CFB
+    Шифрование текста в формате 16-чной строки в режиме OFB
     :param k: размер блока шифрования
     :param text: текст для шифрования в формате 16-чной строки
     :param key_str: ключ в формате 16-чной строки
@@ -284,7 +284,7 @@ def encrypt_text(text: str, key_str: str, c0_str: str, k:int) -> str:
     result = []
     next_c = c0
     for block in text_blocks:
-        crypted_block, next_c = encrypt_block_cfb(block, key, next_c, k)
+        crypted_block, next_c = encrypt_block_ofb(block, key, next_c, k)
         result.extend(crypted_block)
 
     result_hex = binary_to_hex(''.join([str(x) for x in result]))
@@ -294,7 +294,7 @@ def encrypt_text(text: str, key_str: str, c0_str: str, k:int) -> str:
 
 def decrypt_text(text: str, key_str: str, c0_str: str, k: int) -> str:
     """
-    Дешифрование текста в формате 16-чной строки в режиме CFB
+    Дешифрование текста в формате 16-чной строки в режиме OFB
     :param k: размер блока дешифрования
     :param text: текст для дешифрования в формате 16-чной строки
     :param key_str: ключ для дешифрования в формате 16-чной строки
@@ -310,7 +310,7 @@ def decrypt_text(text: str, key_str: str, c0_str: str, k: int) -> str:
     text_blocks = hex_to_blocks(text, k)
     result = []
     for block in text_blocks:
-        decrypted_block, c0 = decrypt_block_cfb(block, key, c0, k)
+        decrypted_block, c0 = decrypt_block_ofb(block, key, c0, k)
         result.extend(decrypted_block)
 
     result_hex = binary_to_hex(''.join([str(x) for x in result]))
